@@ -1,0 +1,26 @@
+{
+  "name": "webpack-learn",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --config build/webpack.config.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kristen12/webpack.git"
+  },
+  "author": "Kristen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kristen12/webpack/issues"
+  },
+  "homepage": "https://github.com/Kristen12/webpack#readme",
+  "devDependencies": {
+    "clean-webpack-plugin": "^3.0.0",
+    "html-webpack-plugin": "^3.2.0",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
+  }
+}
