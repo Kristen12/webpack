@@ -81,19 +81,19 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/main.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/head.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "./src/main.js":
+/***/ "./src/head.js":
 /*!*********************!*\
-  !*** ./src/main.js ***!
+  !*** ./src/head.js ***!
   \*********************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("console.log(\"kristen\");\n\n\n//# sourceURL=webpack:///./src/main.js?");
+eval("console.log(\"多入口文件\");\n\n//# sourceURL=webpack:///./src/head.js?");
 
 /***/ })
 
