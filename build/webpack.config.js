@@ -3,43 +3,69 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const vueLoaderPlugin = require("vue-loader/lib/plugin");
-const Webpack = require("webpack");
+const webpack = require("webpack");
+const devMode = process.argv.indexOf("--mode=production") === -1;
+const HappyPack = require("happypack"); //开启多进程loader转换
+const os = require("os");
+const happyThreadPool = HappyPack.ThreadPool({ size: os.cpus().length });
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
+  .BundleAnalyzerPlugin; //分析打包后的文件
+
 module.exports = {
-  mode: "development", // 开发模式
+  //mode: "development", // 开发模式
   entry: {
     main: ["@babel/polyfill", path.resolve(__dirname, "../src/main.js")], // 入口文件  @babel/polyfill编译新API
     header: path.resolve(__dirname, "../src/head.js") // 多入口文件
   },
+
   output: {
-    filename: "[name].[hash:8].js", // 打包后的文件名称
-    path: path.resolve(__dirname, "../dist") // 打包后的目录
+    path: path.resolve(__dirname, "../dist"), // 打包后的目录
+    filename: "js/[name].[hash:8].js", // 打包后的文件名称
+    chunkFilename: "js/[name].[hash:8].js"
   },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: path.resolve(__dirname, "../public/index.html"),
-      filename: "index.html",
-      chunks: ["main"] // 与入口文件对应的模块名
-    }),
-    new HtmlWebpackPlugin({
-      template: path.resolve(__dirname, "../public/head.html"),
-      filename: "head.html",
-      chunks: ["header"] // 与入口文件对应的模块名
-    }),
-    new CleanWebpackPlugin(), // 清除dist
-    new MiniCssExtractPlugin({
-      filename: "[name].[hash:8].css",
-      chunkFilename: "[id].css"
-    }), // css分离（用外链形式引入css）
-    new vueLoaderPlugin(),
-    new Webpack.HotModuleReplacementPlugin()
-  ],
+
   module: {
     rules: [
+      // {
+      //   test: /\.css$/,
+      //   use: [
+      //     "style-loader",
+      //     MiniCssExtractPlugin.loader,
+      //     "css-loader",
+      //     {
+      //       loader: "postcss-loader", // 添加css前缀
+      //       options: {
+      //         plugins: [require("autoprefixer")]
+      //       }
+      //     }
+      //   ] // 从右向左解析原则
+      // },
+      // {
+      //   test: /\.less$/,
+      //   use: [
+      //     "style-loader",
+      //     MiniCssExtractPlugin.loader,
+      //     "css-loader",
+      //     {
+      //       loader: "postcss-loader",
+      //       options: {
+      //         plugins: [require("autoprefixer")]
+      //       }
+      //     },
+      //     "less-loader"
+      //   ] // 从右向左解析原则
+      // },
       {
         test: /\.css$/,
         use: [
-          "style-loader",
-          MiniCssExtractPlugin.loader,
+          {
+            loader: devMode ? "vue-style-loader" : MiniCssExtractPlugin.loader,
+            options: {
+              publicPath: "../dist/css/",
+              hmr: devMode
+            }
+          },
           "css-loader",
           {
             loader: "postcss-loader", // 添加css前缀
@@ -52,17 +78,22 @@ module.exports = {
       {
         test: /\.less$/,
         use: [
-          "style-loader",
-          MiniCssExtractPlugin.loader,
+          {
+            loader: devMode ? "vue-style-loader" : MiniCssExtractPlugin.loader,
+            options: {
+              publicPath: "../dist/css/",
+              hmr: devMode
+            }
+          },
           "css-loader",
+          "less-loader",
           {
             loader: "postcss-loader",
             options: {
               plugins: [require("autoprefixer")]
             }
-          },
-          "less-loader"
-        ] // 从右向左解析原则
+          }
+        ]
       },
       {
         test: /\.(jpe?g|png|gif)$/i, //图片文件
@@ -117,20 +148,82 @@ module.exports = {
       },
       {
         test: /\.js$/, //转译js
-        use: {
-          loader: "babel-loader",
-          options: {
-            presets: ["@babel/preset-env"]
+        use: [
+          {
+            loader: "happypack/loader?id=happyBabel" //把js文件交给id=happyBabel的happypack实例执行
           }
-        },
+        ],
+        // use: {
+        //   loader: "babel-loader",
+        //   options: {
+        //     presets: ["@babel/preset-env"]
+        //   }
+        // },
         exclude: /node_modules/
       },
       {
         test: /\.vue$/,
-        use: ["vue-loader"]
+        use: [
+          {
+            loader: "vue-loader",
+            options: {
+              compilerOptions: {
+                preserveWhitespace: false
+              }
+            }
+          }
+        ]
       }
     ]
   },
+
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, "../public/index.html"),
+      filename: "index.html",
+      chunks: ["main"] // 与入口文件对应的模块名
+    }),
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, "../public/head.html"),
+      filename: "head.html",
+      chunks: ["header"] // 与入口文件对应的模块名
+    }),
+    new CleanWebpackPlugin(), // 清除dist
+    new MiniCssExtractPlugin({
+      filename: devMode ? "[name].css" : "[name].[hash:8].css",
+      chunkFilename: devMode ? "[id].css" : "[id].[hash:8].css"
+    }), // css分离（用外链形式引入css）
+    new vueLoaderPlugin(),
+    // new Webpack.HotModuleReplacementPlugin()
+    new HappyPack({
+      id: "happyBabel", //与loader对应的id标识
+      loaders: [
+        {
+          loader: "babel-loader",
+          options: {
+            presets: ["@babel/preset-env", { modules: false }], // modules:false防止默认将任何模块类型转译成CommonJS导致tree-shaking失效
+            cacheDirectory: true
+          }
+        }
+      ],
+      threadPool: happyThreadPool // 共享进程池
+    }),
+    new webpack.DllReferencePlugin({
+      //抽离第三方
+      context: __dirname,
+      manifest: require("../static/vendor-manifest.json")
+    }),
+    new CopyWebpackPlugin([
+      // 拷贝生成的文件到dist目录 这样每次不必手动去cv
+      { from: "static", to: "static" }
+    ]),
+    new BundleAnalyzerPlugin({
+      //分析打包文件
+      analyzerHost: "127.0.0.1",
+      analyzerPort: 8889
+    })
+  ],
+
   resolve: {
     alias: {
       //'vue$'
@@ -138,10 +231,10 @@ module.exports = {
       " @": path.resolve(__dirname, "../src")
     },
     extensions: ["*", ".js", ".json", ".vue"]
-  },
-  devServer: {
-    port: 3000,
-    hot: true,
-    contentBase: "../dist"
   }
+  // devServer: {
+  //   port: 3000,
+  //   hot: true,
+  //   contentBase: "../dist"
+  // }
 };
