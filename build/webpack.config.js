@@ -2,6 +2,8 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const vueLoaderPlugin = require("vue-loader/lib/plugin");
+const Webpack = require("webpack");
 module.exports = {
   mode: "development", // 开发模式
   entry: {
@@ -27,7 +29,9 @@ module.exports = {
     new MiniCssExtractPlugin({
       filename: "[name].[hash:8].css",
       chunkFilename: "[id].css"
-    }) // css分离（用外链形式引入css）
+    }), // css分离（用外链形式引入css）
+    new vueLoaderPlugin(),
+    new Webpack.HotModuleReplacementPlugin()
   ],
   module: {
     rules: [
@@ -60,7 +64,6 @@ module.exports = {
           "less-loader"
         ] // 从右向左解析原则
       },
-
       {
         test: /\.(jpe?g|png|gif)$/i, //图片文件
         use: [
@@ -121,7 +124,24 @@ module.exports = {
           }
         },
         exclude: /node_modules/
+      },
+      {
+        test: /\.vue$/,
+        use: ["vue-loader"]
       }
     ]
+  },
+  resolve: {
+    alias: {
+      //'vue$'
+      vue$: "vue/dist/vue.runtime.esm.js",
+      " @": path.resolve(__dirname, "../src")
+    },
+    extensions: ["*", ".js", ".json", ".vue"]
+  },
+  devServer: {
+    port: 3000,
+    hot: true,
+    contentBase: "../dist"
   }
 };
