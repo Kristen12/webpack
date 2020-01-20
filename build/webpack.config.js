@@ -201,7 +201,7 @@ module.exports = {
         {
           loader: "babel-loader",
           options: {
-            presets: ["@babel/preset-env", { modules: false }], // modules:false防止默认将任何模块类型转译成CommonJS导致tree-shaking失效
+            presets: [["@babel/preset-env", { modules: false }]], //modules:false，防止Babel的预案（preset）默认将任何模块类型都转译成CommonJS类型导致tree-shaking失效。
             cacheDirectory: true
           }
         }
